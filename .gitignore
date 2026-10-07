@@ -1,0 +1,85 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+
+# ===== 虚拟环境 =====
+.venv/
+venv/
+env/
+ENV/
+
+# ===== Django =====
+*.log
+*.sqlite3
+db.sqlite3-journal
+local_settings.py
+myYolo/myYolo/settings.py
+/staticfiles/
+/media/task_zip/*
+
+# ===== 前端静态文件 =====
+# /html/static/  # 已取消排除，static 需要提交
+
+# ===== 环境变量 / 密钥 =====
+.env
+.env.*
+!.env.example
+secrets.py
+secrets.json
+
+# ===== 私钥 / 证书 =====
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+id_rsa
+id_rsa.pub
+*.ppk
+
+# ===== 云服务 / SSH / 集群凭证 =====
+.aws/credentials
+.gcloud/
+.kube/
+*.kubeconfig
+.ssh/
+
+# ===== 数据库备份 / dump =====
+*.sql
+*.sql.gz
+*.dump
+*.bak
+dumps/
+backups/
+
+# ===== 日志 =====
+logs/
+
+# ===== 测试 / 覆盖率 =====
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ===== IDE: PyCharm / IntelliJ =====
+.idea/
+
+# ===== VS Code =====
+.vscode/
+
+# ===== Windows 系统文件 =====
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ===== macOS =====
+.DS_Store
