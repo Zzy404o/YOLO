@@ -1,5 +1,5 @@
 from django.urls import path
-from myapp import views
+from myapp import views,code
 
 urlpatterns = [
     path('task/list/',views.TaskViewSet.as_view(
@@ -8,4 +8,7 @@ urlpatterns = [
     path('task/set/<int:pk>/',views.TaskViewSet.as_view(
         {"get":"retrieve","put":"update","patch":"partial_update","delete":"destroy"}
     )),
+    path('user/info/',views.UserInfo.as_view()),
+
+    path('image/code/',code.image_code)
 ]
