@@ -10,5 +10,7 @@ urlpatterns = [
     )),
     path('user/info/',views.UserInfo.as_view()),
 
-    path('image/code/',code.image_code)
+    path('image/code/',code.image_code),
+
+    path('login/',views.Login.as_view())
 ]

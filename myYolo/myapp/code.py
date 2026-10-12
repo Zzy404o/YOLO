@@ -3,7 +3,7 @@ import random
 from io import BytesIO
 from django.http import HttpResponse
 
-def check_code(width=120,height=30,char_length=5,font_file=r"C:\Windows\Fonts\ARLRDBD.TTF",font_size=28):
+def check_code(width=120,height=30,char_length=5,font_file=r"../ARLRDBD.TTF",font_size=28):
     code = []   # 用来存生成的验证码字符串
     img = Image.new(mode='RGB',size=(width,height),color=(255,255,255))
     draw = ImageDraw.Draw(img,mode='RGB')
@@ -41,18 +41,15 @@ def check_code(width=120,height=30,char_length=5,font_file=r"C:\Windows\Fonts\AR
         y2 = random.randint(0,height)
 
         draw.line((x1,y1,x2,y2),fill=rndColor())
-    # 作用：图片滤镜，增强边缘，让文字更有质感
     img = img.filter(ImageFilter.EDGE_ENHANCE_MORE)
-    return img, ''.join(code)   # 一次性返回 2 个结果，图片对象+验证码文本，例如 'AK9SD'
-    # code 是前面定义的列表，用来存验证码字符，比如 ['A','K','9','S','D']
-    # '' 是空字符串
-    # join：把列表里每一项拼在一起，中间不加任何东西
+    return img, ''.join(code)
 
 
 def image_code(request):
     #生成验证码图片并返回给前端，验证码文本存入 session
     img, code = check_code()
     request.session['check_code'] = code
+    request.session.set_expiry(60*5)
     buf = BytesIO()
-    img.save(buf, format='PNG')
+    img.save(buf, 'png')
     return HttpResponse(buf.getvalue(), content_type='image/png')

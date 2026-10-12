@@ -2,10 +2,18 @@ from rest_framework import viewsets,status
 from rest_framework.views import APIView
 
 from myapp.models import Task
-from myapp.serializers import TaskSerializer
+from django.contrib.auth.models import User
+from myapp.serializers import TaskSerializer, LoginSerializer
 from rest_framework.response import Response
+from rest_framework.authentication import SessionAuthentication,TokenAuthentication
+from django.contrib import auth
+
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+
 
 class TaskViewSet(viewsets.ModelViewSet):
+    authentication_classes = (TokenAuthentication,SessionAuthentication)
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
     def perform_create(self, serializer):
@@ -24,12 +32,44 @@ class TaskViewSet(viewsets.ModelViewSet):
         self.perform_update(serializer)
 
         if getattr(instance, '_prefetched_objects_cache', None):
-            # If 'prefetch_related' has been applied to a queryset, we need to
-            # forcibly invalidate the prefetch cache on the instance.
             instance._prefetched_objects_cache = {}
 
         return Response(serializer.data)
 
 class UserInfo(APIView):
     def get(self,request):
-        return Response({"id":request.user.id,"username": request.user.username})
+        info = request.session.get('info')
+        if not info:
+            return Response({'status': 0, 'msg': '未登录'})
+        return Response({'status': 200, 'data': info})
+
+@method_decorator(csrf_exempt,name='post')
+class Login(APIView):
+    def post(self,request):
+        s = LoginSerializer(data=request.data)
+        if s.is_valid():
+            input_code = s.validated_data.get('code')
+            code = request.session.get('check_code','')
+            if input_code != code:
+                return Response({'status':4,'error':'验证码错误'})
+            del request.session['check_code']
+            input_name = s.validated_data.get('username')
+            input_pwd = s.validated_data.get('pwd')
+            user = User.objects.filter(username=input_name).first()
+            if user:
+                result = user.check_password(input_pwd)
+                if not result:
+                    return Response({'status':5,'error':'用户名或密码错误'})
+
+                auth.login(request, user)
+                request.session['info'] = {
+                    'id': user.id,
+                    'username':user.username,
+                }
+
+                request.session.set_expiry(60*60*24*7)
+                return Response({'status':6})
+            return Response({'status': 5, 'error': '用户名或密码错误'})
+        return Response({"status": 1, "error": s.errors})
+
+

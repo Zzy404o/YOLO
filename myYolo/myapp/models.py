@@ -24,8 +24,15 @@ class Task(models.Model):
         ordering = ('-create_time','num','status')
 
     def save(self, *args, **kwargs):
+        file_changed = False
+        if self.pk is None:
+            file_changed = True
+        else:
+            old_obj = Task.objects.get(pk=self.pk)
+            file_changed = old_obj.task_file != self.task_file
+
         # 当上传了zip文件时
-        if self.task_file and (self.pk is None or 'task_file' in self.changed_fields):
+        if self.task_file and file_changed:
             with zipfile.ZipFile(self.task_file) as zf:
                 count = 0
                 # 遍历压缩包里所有文件

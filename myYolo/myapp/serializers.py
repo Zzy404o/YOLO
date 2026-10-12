@@ -7,7 +7,9 @@ class TaskSerializer(serializers.ModelSerializer):
     person = serializers.SerializerMethodField()
 
     def get_person(self, obj):
-        return obj.person.username if obj.person else None
+        if obj.person:
+            return obj.person.username
+        return None
 
     class Meta:
         model = Task
@@ -19,3 +21,8 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = '__all__'
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    pwd = serializers.CharField()
+    code = serializers.CharField()
