@@ -4,38 +4,43 @@
     <meta charset="UTF-8">
     <title>Title</title>
     <link rel="stylesheet" href="./static/plugins/bootstrap-5.3.8/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
-        .c1{
+        .c1 {
             width: 30%;
             height: 400px;
             margin: 100px auto;
             padding-top: 20px;
         }
-        .center{
+
+        .center {
             text-align: center;
         }
+
         .c2 {
             background-color: #ffffff;
             border: 1px solid #aaa;
             border-radius: 5px;
             box-shadow: 5px 5px 20px #aaa;
         }
-        .c3{
+
+        .c3 {
             width: 90%;
             margin: 0 auto;
         }
-        .c4{
+
+        .c4 {
             margin: 0 auto;
-            position:relative
+            position: relative
         }
-        .c5{
+
+        .c5 {
             position: absolute;
-            top:38px;
-            color:red;
+            top: 38px;
+            color: red;
             font-size: 12px;
         }
-        .c6{
+
+        .c6 {
             padding-left: 0;
         }
     </style>
@@ -44,16 +49,17 @@
 <body>
 
 <div class="container c1 c2">
-    <form id="data">
-        <div class="c3">
-            <div class="mb-3 center">
-                <h4>用户登录</h4>
-            </div>
+
+    <div class="c3">
+        <div class="mb-3 center">
+            <h4>用户登录</h4>
+        </div>
+        <form id="data">
             <div class="row mb-1">
                 <label>用户名</label>
             </div>
             <div class="row mb-3 c4">
-                <input type="text" class="form-control" placeholder="用户名">
+                <input type="text" class="form-control" placeholder="用户名" name="username">
                 <span class="c5"></span>
             </div>
 
@@ -61,7 +67,7 @@
                 <label>密码</label>
             </div>
             <div class="row mb-3 c4">
-                <input type="password" class="form-control" placeholder="密码">
+                <input type="password" class="form-control" placeholder="密码" name="pwd">
                 <span class="c5"></span>
             </div>
 
@@ -70,36 +76,75 @@
             </div>
             <div class="row mb-4 c4">
                 <div class="col-sm-7  c6">
-                    <input type="text" class="form-control" placeholder="验证码" id="code">
+                    <input type="text" class="form-control" placeholder="验证码" name="code">
                 </div>
 
                 <div class="col-sm-5">
-                    <img src="http://127.0.0.1:8000/myapp/image/code/">
+                    <img id="codeImg" title="点击刷新">
                 </div>
                 <div>
                     <span class="c5"></span>
                 </div>
             </div>
+        </form>
 
 
-
-            <div class="center">
-                <button type="submit" class="btn btn-primary" id="submit">登录</button>
-            </div>
+        <div class="center">
+            <button type="button" class="btn btn-primary" id="submit">登录</button>
         </div>
-    </form>
+    </div>
+
 </div>
 <script src="./static/js/jquery-4.0.0.min.js"></script>
 <script>
-    $(function (){
-        $('#submit').click(function (){
+
+    function refreshCode() {
+        let xhr = new XMLHttpRequest();
+        xhr.open('get', 'http://localhost:8000/myapp/image/code/');
+        xhr.withCredentials = true;
+        xhr.responseType = 'blob';
+        xhr.onload = function () {
+            if (xhr.status == 200) {
+                let url = URL.createObjectURL(xhr.response);
+                document.getElementById('codeImg').src = url;
+            }
+        };
+        xhr.send();
+    }
+    refreshCode();
+    document.getElementById('codeImg').onclick = function() {
+        refreshCode();
+    }
+
+    $(function () {
+        $('#submit').click(function () {
             $.ajax({
-                url:'/task/ajax/',
-                type:'post',
-                data:$('#data').serialize(),   //自动将表单里的值获取到并打包
-                dataType:'JSON',    //内部拿到字符串会给字符串转换为前端的对象，方便取值
-                success:function (res){
-                    console.log(res);
+                url: 'http://localhost:8000/myapp/login/',
+                type: 'post',
+                data: $('#data').serialize(),
+                dataType: 'JSON',
+                xhrFields: { withCredentials: true },
+                success: function (res) {
+                    let e = $('.c5')
+                    for (let i = 0; i < 3; i++) {
+                        e.eq(i).text('');
+                    }
+
+                    if (res.status == 1) {
+                        let errors = res.error;
+                        if (errors.username) e.eq(0).text(errors.username[0]);
+                        if (errors.pwd) e.eq(1).text(errors.pwd[0]);
+                        if (errors.code) e.eq(2).text(errors.code[0]);
+                    } else if (res.status == 4) {
+                        e.eq(2).text(res.error);
+                    } else if (res.status == 5) {
+                        e.eq(1).text(res.error);
+                    } else {
+                        location.href = 'task_list.html';
+                    }
+                },
+                error: function (xhr) {
+                    console.error('请求失败:', xhr.status, xhr.responseText);
                 }
             })
         })

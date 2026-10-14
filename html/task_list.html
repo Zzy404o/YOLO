@@ -80,7 +80,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-primary" id="get">确定</button>
+                <button type="button" class="btn btn-primary" id="getTask">确定</button>
             </div>
         </div>
     </div>
@@ -97,7 +97,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-primary" id="sure">确定</button>
+                <button type="button" class="btn btn-primary" id="backTask">确定</button>
             </div>
         </div>
     </div>
@@ -113,13 +113,20 @@
             <div class="modal-body">
                 <form id="formAdd">
                     <div class="input-group">
-                        <input type="file" class="form-control" id="addFile"
-                               aria-describedby="inputGroupFileAddon04" aria-label="Upload">
+                        <div>
+                            <textarea class="form-control" placeholder="备注" name="txt"></textarea>
+                        </div>
+                        <div class="interval">
+                            <input type="file" class="form-control" id="addFile"
+                               aria-describedby="inputGroupFileAddon04" aria-label="Upload" name="commit_zip">
+                        </div>
+                        <span class="error"></span>
+
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button id="btnSave" type="button" class="btn btn-primary">保存</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
                 <button id="btnSubmit" type="button" class="btn btn-primary">提交</button>
             </div>
         </div>
@@ -137,18 +144,20 @@
     const backModal = new bootstrap.Modal('#backModal', {
         keyboard: false
     })
+    let taskId = null;
 
     let username = null;
     let userid = null;
     let use = new XMLHttpRequest();
-    use.open('get','http://127.0.0.1:8000/myapp/user/info/');
+    use.open('get','http://localhost:8000/myapp/user/info/');
     use.withCredentials = true;
     use.send();
     use.onreadystatechange = function (){
         if(use.status == 200 && use.readyState == 4){
             let res = JSON.parse(use.responseText);
-            userid = res['id'];
-            username = res['username'];
+            let data = res.data
+            userid = data['id'];
+            username = data['username'];
             let user = document.getElementById('user')
             user.innerText = username
 
@@ -156,7 +165,7 @@
     }
 
     let xml = new XMLHttpRequest();
-    xml.open('get', 'http://127.0.0.1:8000/myapp/task/list/');
+    xml.open('get', 'http://localhost:8000/myapp/task/list/');
     xml.withCredentials = true;   // 跨域携带登录 Cookie
     xml.send();
     xml.onreadystatechange = function () {
@@ -184,68 +193,78 @@
                 tr.appendChild(td);
                 let status = info.status;
 
-                let get = document.getElementsByClassName("get")[i];
+
                 if (status == 2 && username == info.person) {
                     td.innerHTML = '<a href="#" class="btn btn-light btn-sm back">归还</a>'+
                         '<a href="#" class="btn btn-success btn-sm submit">提交</a>'
                 }else if(status == 2 && username != info.person){
                     td.innerHTML = '<p style="color:green;">已被领取</p>'
                 } else if (status == 3) {
-                    td.innerHTML = '<p style="color: #6c757d">已完成</p>'
+                    td.innerHTML = '<p style="color: #6c757d">已提交</p>'
                 } else {
+                    let get = td.querySelector(".get");
                     get.onclick = function () {
+                        taskId = info.id
                         getModal.show();
                     }
                 }
-                let yes = document.getElementById('get');
-                let id = info.id;
-                yes.onclick = function () {
-                    let form = new XMLHttpRequest();
-                    form.open('patch', 'http://127.0.0.1:8000/myapp/task/set/' + id + '/');
-                    form.setRequestHeader("Content-Type", "application/json");
-                    form.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
-                    let sendData = {
-                        'status': 2,
-                    };
-                    form.send(JSON.stringify(sendData));
-                    form.onreadystatechange = function () {
-                        window.location.reload();
-                    }
-                }
-
 
                 if (status == 2 && username == info.person){
-                    let back = document.getElementsByClassName("back")[i];
-                    back.onclick = function (){
-                        backModal.show();
-                    }
-
-                    let submit = document.getElementsByClassName('submit')[i]
+                    let back = td.querySelector(".back");
+                    let submit = td.querySelector(".submit");
                     if(username == info.person){
+                        back.onclick = function (){
+                            taskId = info.id
+                            backModal.show();
+                        }
                         submit.onclick = function (){
+                            taskId = info.id
                             submitModal.show();
+
                         }
                     }
                 }
 
-                let sure = document.getElementById('sure');
-                sure.onclick = function (){
-                    let form = new XMLHttpRequest();
-                    form.open('patch', 'http://127.0.0.1:8000/myapp/task/set/' + id + '/');
-                    form.setRequestHeader("Content-Type", "application/json");
-                    form.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
-                    let sendData = {
-                        'status': 1,
-                    };
-                    form.send(JSON.stringify(sendData));
-                    form.onreadystatechange = function () {
-                        window.location.reload();
-                    }
-                }
+            }
+        }
+    }
 
+    let yes = document.getElementById('getTask');
+    yes.onclick = function () {
+        let form = new XMLHttpRequest();
+        form.open('PATCH', 'http://localhost:8000/myapp/task/set/' + taskId + '/');
+        form.withCredentials = true;
+        form.setRequestHeader("Content-Type", "application/json");
+        let sendData = {
+            "status": 2
+        };
+        form.send(JSON.stringify(sendData));
+        form.onreadystatechange = function () {
+            if (form.readyState != 4) return;
+            if (form.status == 200) {
+                window.location.reload();
+            } else {
+                alert("领取失败：" + form.status + " " + form.responseText);
+            }
+        }
+    }
 
-
-
+    let sure = document.getElementById('backTask');
+    sure.onclick = function (){
+        let form = new XMLHttpRequest();
+        form.open('PATCH', 'http://localhost:8000/myapp/task/set/' + taskId + '/');
+        form.withCredentials = true;
+        form.setRequestHeader("Content-Type", "application/json");
+        let sendData = {
+            "status": 1,
+        };
+        form.send(JSON.stringify(sendData));
+        form.onreadystatechange = function () {
+            if (form.readyState != 4) return;
+            if (form.status == 200) {
+                window.location.reload();
+            } else {
+                alert("归还失败：" + form.status + " " + form.responseText);
             }
         }
     }
