@@ -4,11 +4,7 @@
     <meta charset="UTF-8">
     <title>标注任务列表</title>
     <link rel="stylesheet" href="./static/plugins/bootstrap-5.3.8/css/bootstrap.min.css">
-    <style>
-        .interval {
-            margin: 20px 0;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/css/common.css">
 </head>
 <body>
 <nav class="navbar navbar-expand-lg bg-body-tertiary">
@@ -116,12 +112,11 @@
                         <div>
                             <textarea class="form-control" placeholder="备注" name="txt"></textarea>
                         </div>
-                        <div class="interval">
+                        <div class="interval c4">
                             <input type="file" class="form-control" id="addFile"
                                aria-describedby="inputGroupFileAddon04" aria-label="Upload" name="commit_zip">
+                            <span class="c5"></span>
                         </div>
-                        <span class="error"></span>
-
                     </div>
                 </form>
             </div>
@@ -267,6 +262,45 @@
                 alert("归还失败：" + form.status + " " + form.responseText);
             }
         }
+    }
+
+    let ddl = document.getElementById('btnSubmit');
+    ddl.onclick = function (){
+        let add = document.getElementById('formAdd');
+        let fd = new FormData(add);
+        fd.append("task", taskId);
+        let form = new XMLHttpRequest();
+        form.withCredentials = true;
+        form.open('POST','http://localhost:8000/myapp/commit/list/')
+        form.withCredentials = true;
+        let addfile = document.getElementById('addFile')
+        let error = document.getElementsByClassName("c5")[0];
+        form.onreadystatechange = function(){
+            if (form.readyState != 4) return;
+            if(form.status == 201){
+                let res = JSON.parse(form.responseText);
+                console.log(res)
+                add.reset();
+                addfile.value = null;
+                let status = new XMLHttpRequest();
+                status.open('PATCH', 'http://localhost:8000/myapp/task/set/' + taskId + '/');
+                status.withCredentials = true;
+                status.setRequestHeader("Content-Type", "application/json");
+                let sendData = {
+                    "status": 3,
+                };
+                status.send(JSON.stringify(sendData));
+                submitModal.hide();
+                window.location.reload();
+            }else if(form.status == 200){
+                let res = JSON.parse(form.responseText);
+                error.innerText = typeof res.error === 'string' ? res.error : res.error['commit_zip'];
+                addfile.value = null;
+            }else{
+                error.innerText = "服务器异常:" + form.status;
+            }
+        }
+        form.send(fd);
     }
 
     function ctd(tr, data, text) {

@@ -1,0 +1,41 @@
+.c1 {
+    width: 30%;
+    height: 400px;
+    margin: 100px auto;
+    padding-top: 20px;
+}
+
+.center {
+    text-align: center;
+}
+
+.c2 {
+    background-color: #ffffff;
+    border: 1px solid #aaa;
+    border-radius: 5px;
+    box-shadow: 5px 5px 20px #aaa;
+}
+
+.c3 {
+    width: 90%;
+    margin: 0 auto;
+}
+
+.c4 {
+    margin: 0 auto;
+    position: relative
+}
+
+.c5 {
+    position: absolute;
+    top: 38px;
+    color: red;
+    font-size: 12px;
+}
+
+.c6 {
+    padding-left: 0;
+}
+.interval {
+    margin: 20px 0;
+}
