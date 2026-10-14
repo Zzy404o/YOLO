@@ -12,8 +12,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
 
+class CsrfExemptSessionAuthentication(SessionAuthentication):
+    def enforce_csrf(self, request):
+        return
+
 class TaskViewSet(viewsets.ModelViewSet):
-    authentication_classes = (TokenAuthentication,SessionAuthentication)
+    authentication_classes = (TokenAuthentication, CsrfExemptSessionAuthentication)
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
     def perform_create(self, serializer):
@@ -27,6 +31,10 @@ class TaskViewSet(viewsets.ModelViewSet):
             if instance.status != 1:
                 return Response({"msg": "任务已被领取，无法重复领取"}, status=status.HTTP_400_BAD_REQUEST)
             instance.person = self.request.user
+        if target_status == 1:
+            if instance.status == 3:
+                return Response({"msg":"任务已提交,无法归还"},status=status.HTTP_400_BAD_REQUEST)
+            instance.person = None
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
@@ -45,6 +53,7 @@ class UserInfo(APIView):
 
 @method_decorator(csrf_exempt,name='post')
 class Login(APIView):
+    authentication_classes = []
     def post(self,request):
         s = LoginSerializer(data=request.data)
         if s.is_valid():
