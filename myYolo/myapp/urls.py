@@ -12,5 +12,8 @@ urlpatterns = [
 
     path('image/code/',code.image_code),
 
-    path('login/',views.Login.as_view())
+    path('login/',views.Login.as_view()),
+
+    path('commit/list/',views.CommitTask.as_view()),
+    path('commit/set/<int:pk>/',views.CommitDetail.as_view())
 ]

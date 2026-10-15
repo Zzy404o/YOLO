@@ -1,9 +1,9 @@
-from rest_framework import viewsets,status
+from rest_framework import viewsets,status,generics
 from rest_framework.views import APIView
 
-from myapp.models import Task
+from myapp.models import Task,Commit
 from django.contrib.auth.models import User
-from myapp.serializers import TaskSerializer, LoginSerializer
+from myapp.serializers import TaskSerializer, LoginSerializer,CommitSerializer
 from rest_framework.response import Response
 from rest_framework.authentication import SessionAuthentication,TokenAuthentication
 from django.contrib import auth
@@ -11,6 +11,7 @@ from django.contrib import auth
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
+import zipfile
 
 class CsrfExemptSessionAuthentication(SessionAuthentication):
     def enforce_csrf(self, request):
@@ -31,10 +32,17 @@ class TaskViewSet(viewsets.ModelViewSet):
             if instance.status != 1:
                 return Response({"msg": "任务已被领取，无法重复领取"}, status=status.HTTP_400_BAD_REQUEST)
             instance.person = self.request.user
-        if target_status == 1:
+        elif target_status == 1:
             if instance.status == 3:
                 return Response({"msg":"任务已提交,无法归还"},status=status.HTTP_400_BAD_REQUEST)
             instance.person = None
+        elif target_status == 3:
+            if instance.status == 1:
+                return Response({"msg":"任务提交需要先领取"},status=status.HTTP_400_BAD_REQUEST)
+            if instance.status == 2 and instance.person != self.request.user:
+                return Response({"msg":"任务已被领取"},status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"msg":"状态不存在"},status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
@@ -82,3 +90,32 @@ class Login(APIView):
         return Response({"status": 1, "error": s.errors})
 
 
+class CommitTask(APIView):
+    authentication_classes = (TokenAuthentication, CsrfExemptSessionAuthentication)
+    def get(self,request):
+        queryset = Commit.objects.all()
+        s = CommitSerializer(instance=queryset,many=True)
+        return Response(s.data, status=status.HTTP_200_OK)
+    def post(self,request):
+        s = CommitSerializer(data=request.data)
+        if s.is_valid():
+            input_zip = s.validated_data.get("commit_zip")
+            task_id = request.data.get("task")
+            obj = Task.objects.filter(id=task_id).first()
+            if not obj:
+                return Response({"error": "任务不存在"})
+            with zipfile.ZipFile(input_zip) as cf:
+                count = 0
+                for filename in cf.namelist():
+                    if filename.lower().endswith('.txt') and not filename.endswith('/'):
+                        count += 1
+                if count != obj.num:
+                    return Response({'error': "文件数量错误"})
+            s.save(task=obj,commit_person=self.request.user)
+            return Response({"msg": "提交成功"}, status=status.HTTP_201_CREATED)
+        return Response({"error": s.errors})
+
+
+class CommitDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Commit.objects.all()
+    serializer_class = CommitSerializer

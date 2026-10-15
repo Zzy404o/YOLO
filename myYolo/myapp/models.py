@@ -45,3 +45,26 @@ class Task(models.Model):
 
     def __str__(self):
         return self.title
+
+class Commit(models.Model):
+    """提交表"""
+    task = models.ForeignKey(to=Task,on_delete=models.PROTECT,verbose_name='任务')
+    txt = models.TextField(verbose_name='备注',blank=True)
+    commit_time = models.DateTimeField(auto_now_add=True,verbose_name="提交时间")
+    commit_zip = models.FileField(verbose_name="任务提交",upload_to="commit_zip/")
+    commit_person = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT,verbose_name="提交人",related_name='commit_person')
+    check_choice = (
+        (1,'待审核'),
+        (2,'已打回'),
+        (3,'审核通过')
+    )
+    check_status = models.SmallIntegerField(verbose_name="审核情况",choices=check_choice,default=1)
+    check_person = models.ForeignKey(settings.AUTH_USER_MODEL,null=True, blank=True,on_delete=models.PROTECT,verbose_name="审核员",related_name="check_person")
+
+    class Meta:
+        verbose_name = '提交'
+        verbose_name_plural = '提交列表'
+        ordering = ('-commit_time','check_status')
+
+    def __str__(self):
+        return self.task.title
