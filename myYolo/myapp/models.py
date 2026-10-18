@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 import zipfile
+from django.utils import timezone
 
 class Task(models.Model):
     """任务表"""
@@ -13,7 +14,8 @@ class Task(models.Model):
     status_choice = (
         (1,'未领取'),
         (2,'标注中'),
-        (3,'已提交')
+        (3,'审核中'),
+        (4,'已完成')
     )
     status = models.SmallIntegerField(verbose_name='状态',choices=status_choice,default=1)
     person = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,verbose_name="标注人",blank=True,null=True,related_name='assigned_tasks')
@@ -59,12 +61,37 @@ class Commit(models.Model):
         (3,'审核通过')
     )
     check_status = models.SmallIntegerField(verbose_name="审核情况",choices=check_choice,default=1)
+    check_txt = models.TextField(verbose_name="修改意见",blank=True,null=True)
     check_person = models.ForeignKey(settings.AUTH_USER_MODEL,null=True, blank=True,on_delete=models.PROTECT,verbose_name="审核员",related_name="check_person")
+    check_time = models.DateTimeField(null=True,blank=True,verbose_name='审核时间')
 
     class Meta:
         verbose_name = '提交'
         verbose_name_plural = '提交列表'
         ordering = ('-commit_time','check_status')
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # 审核结果联动任务状态
+        if self.check_status == 2:
+            Task.objects.filter(id=self.task_id).update(status=2, person=self.commit_person)
+        elif self.check_status == 3:
+            Task.objects.filter(id=self.task_id).update(status=4)
+
     def __str__(self):
         return self.task.title
+
+class Back(models.Model):
+    """归还表"""
+    back_user = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT,verbose_name="归还人")
+    back_task = models.ForeignKey(to=Task,on_delete=models.CASCADE,verbose_name="归还任务")
+    back_time = models.DateTimeField(auto_now_add=True,verbose_name="归还时间")
+    back_round = models.IntegerField(verbose_name="归还次数",default=0)
+
+    class Meta:
+        verbose_name = '归还'
+        verbose_name_plural = '归还领取限制'
+
+    def interval_time(self):
+        interval = timezone.now() - self.back_time
+        return interval
