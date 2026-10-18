@@ -17,13 +17,9 @@ from django.db.models import F
 from django.utils import timezone
 from datetime import timedelta
 
-from django.db import transaction
-
 class CsrfExemptSessionAuthentication(SessionAuthentication):
     def enforce_csrf(self, request):
         return
-
-
 
 class TaskViewSet(viewsets.ModelViewSet):
     authentication_classes = (TokenAuthentication, CsrfExemptSessionAuthentication)
@@ -182,32 +178,7 @@ class CommitDetail(generics.RetrieveUpdateDestroyAPIView):
 
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
-
-        try:
-            with transaction.atomic():
-                self.perform_update(serializer)
-
-                commit_obj = serializer.instance
-                check_status = commit_obj.check_status
-                task = commit_obj.task
-
-                if not task:
-                    raise Exception("没有关联任务")
-
-                if check_status == 1:
-                    pass
-                elif check_status == 2:
-                    Task.objects.filter(id=task.id).update(status=2)
-                    UserTask.objects.create(change_task=task,change_status=1,change_txt=commit_obj.check_txt,
-                                            commit_user=commit_obj.commit_person,change_person=commit_obj.check_person)
-                elif check_status == 3:
-                    Task.objects.filter(id=task.id).update(status=4)
-                    UserTask.objects.create(change_task=task, change_status=2, change_txt=commit_obj.check_txt,
-                                            commit_user=commit_obj.commit_person, change_person=commit_obj.check_person)
-                else:
-                    raise Exception('没有当前状态')
-        except Exception as e:
-            return Response({"msg": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        self.perform_update(serializer)
 
         if getattr(instance, '_prefetched_objects_cache', None):
             instance._prefetched_objects_cache = {}
@@ -218,6 +189,14 @@ class TaskList(APIView):
     authentication_classes = (TokenAuthentication, SessionAuthentication)
     permission_classes = (IsAuthenticated,)
     def get(self,request):
-        queryset = UserTask.objects.filter(commit_user=request.user).order_by("change_status","-change_time")
+        queryset = UserTask.objects.filter(commit_user=request.user).order_by("-change_time")
+        # 每个任务取最新一条审核的状态：最新仍是不合格的任务才算待修改
+        # 任务后来通过审核的话，早先的不合格记录不再置顶
+        latest = {}
+        for r in queryset:
+            latest.setdefault(r.change_task_id, r.change_status)
         s = UserTaskSerializer(instance=queryset, many=True)
-        return Response(s.data, status=status.HTTP_200_OK)
+        data = s.data
+        for item, r in zip(data, queryset):
+            item["is_pending"] = (latest[r.change_task_id] == 1)
+        return Response(data, status=status.HTTP_200_OK)
