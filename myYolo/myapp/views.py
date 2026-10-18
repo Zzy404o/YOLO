@@ -1,11 +1,12 @@
 from rest_framework import viewsets,status,generics
 from rest_framework.views import APIView
 
-from myapp.models import Task,Commit,Back
+from myapp.models import Task,Commit,Back,UserTask
 from django.contrib.auth.models import User
-from myapp.serializers import TaskSerializer, LoginSerializer,CommitSerializer
+from myapp.serializers import TaskSerializer, LoginSerializer,CommitSerializer,UserTaskSerializer
 from rest_framework.response import Response
 from rest_framework.authentication import SessionAuthentication,TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
 from django.contrib import auth
 
 from django.views.decorators.csrf import csrf_exempt
@@ -197,8 +198,12 @@ class CommitDetail(generics.RetrieveUpdateDestroyAPIView):
                     pass
                 elif check_status == 2:
                     Task.objects.filter(id=task.id).update(status=2)
+                    UserTask.objects.create(change_task=task,change_status=1,change_txt=commit_obj.check_txt,
+                                            commit_user=commit_obj.commit_person,change_person=commit_obj.check_person)
                 elif check_status == 3:
                     Task.objects.filter(id=task.id).update(status=4)
+                    UserTask.objects.create(change_task=task, change_status=2, change_txt=commit_obj.check_txt,
+                                            commit_user=commit_obj.commit_person, change_person=commit_obj.check_person)
                 else:
                     raise Exception('没有当前状态')
         except Exception as e:
@@ -208,3 +213,11 @@ class CommitDetail(generics.RetrieveUpdateDestroyAPIView):
             instance._prefetched_objects_cache = {}
 
         return Response(serializer.data)
+
+class TaskList(APIView):
+    authentication_classes = (TokenAuthentication, SessionAuthentication)
+    permission_classes = (IsAuthenticated,)
+    def get(self,request):
+        queryset = UserTask.objects.filter(commit_user=request.user).order_by("change_status","-change_time")
+        s = UserTaskSerializer(instance=queryset, many=True)
+        return Response(s.data, status=status.HTTP_200_OK)

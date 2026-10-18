@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from myapp.models import Task,Commit
+from myapp.models import Task,Commit,UserTask
 from django.contrib.auth.models import User
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -49,3 +49,17 @@ class CommitSerializer(serializers.ModelSerializer):
                 }
             }
         }
+
+class UserTaskSerializer(serializers.ModelSerializer):
+    change_task = serializers.SerializerMethodField()
+    def get_change_task(self,obj):
+        return f"{obj.change_task.id}-{obj.change_task.title}"
+    change_status = serializers.SerializerMethodField()
+    def get_change_status(self,obj):
+        return obj.get_change_status_display()
+    change_person = serializers.SerializerMethodField()
+    def get_change_person(self,obj):
+        return obj.change_person.username
+    class Meta:
+        model = UserTask
+        fields = '__all__'
