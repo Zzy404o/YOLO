@@ -12,8 +12,12 @@
 <div class="interval">
     <div class="container">
         <div class="card">
-            <div class="card-header">
-                任务列表
+            <div class="card-header clearfix">
+                我的审核结果
+                <span id="tip" class="badge text-bg-success" style="display:none; float:right;">你有新的审核结果</span>
+                <label style="float:right; font-weight:normal; margin-right:15px;">
+                    <input type="checkbox" id="onlyPending"> 只看待修改
+                </label>
             </div>
             <div class="card-body">
                 <table class="table">
@@ -37,57 +41,92 @@
 <script src="./static/plugins/bootstrap-5.3.8/js/bootstrap.bundle.js"></script>
 <script src="./static/js/common.js"></script>
 <script>
-window.onUserInfoReady = function (){
-    let xml = new XMLHttpRequest();
-    xml.open('get',"http://localhost:8000/myapp/user/task/");
-    xml.withCredentials = true;
-    xml.send()
-    xml.onreadystatechange = function (){
-        if (xml.readyState != 4) return;
-        if (xml.status == 200){
-            let datas = JSON.parse(xml.responseText);
-            let datalist = document.getElementById("datalist")
-            for (let i in datas){
-                let tr = document.createElement("tr")
-                datalist.appendChild(tr);
-                let data = datas[i]
-                ctd(tr,data,"change_task");
-                ctd(tr,data,"change_status");
-                ctd(tr,data,"change_txt");
-                ctd(tr,data,"change_person");
-                ctd(tr,data,"change_time");
 
+    window.onUserInfoReady = function (){
+        fetchList();
+    }
+
+    let datas = [];
+    let lastId = null;   // 已见过的最大记录 id
+
+    function fetchList(){
+        let xml = new XMLHttpRequest();
+        xml.open('get',"http://localhost:8000/myapp/user/task/");
+        xml.withCredentials = true;
+        xml.send()
+        xml.onreadystatechange = function (){
+            if (xml.readyState != 4) return;
+            if (xml.status == 200){
+                handleData(JSON.parse(xml.responseText));
             }
-
         }
-
     }
-}
 
-function ctd(tr, data, text){
-    let td = document.createElement("td")
-    if(text == "change_txt"){
-        if(data[text] == ""){
-            td.innerText = '无'
-        }else {
+    function handleData(list){
+        let maxId = 0;
+        for (let d of list){ if (d.id > maxId) maxId = d.id; }
+        if (lastId !== null && maxId > lastId){
+            showTip("你有新的审核结果");   // 只在出现新记录时提醒，首次加载不提醒
+        }
+        lastId = maxId;
+        datas = list;
+        render();
+    }
+
+    function render(){
+        let datalist = document.getElementById("datalist");
+        datalist.innerHTML = "";
+        let only = document.getElementById("onlyPending").checked;
+        let pending = datas.filter(d => d.is_pending);
+        let others  = datas.filter(d => !d.is_pending);
+        // 默认排序：待修改置顶，其余按时间倒序
+        let rows = only ? pending : pending.concat(others);
+        for (let data of rows){
+            let tr = document.createElement("tr")
+            datalist.appendChild(tr);
+            ctd(tr,data,"change_task");
+            ctd(tr,data,"change_status");
+            ctd(tr,data,"change_txt");
+            ctd(tr,data,"change_person");
+            ctd(tr,data,"change_time");
+        }
+    }
+
+    function showTip(msg){
+        let tip = document.getElementById("tip");
+        tip.innerText = msg;
+        tip.style.display = "inline-block";
+        setTimeout(() => { tip.style.display = "none"; }, 5000);
+    }
+
+    document.getElementById("onlyPending").onchange = render;   // 切换筛选直接用缓存重绘
+    setInterval(fetchList, 20000);   // 每 20 秒轮询一次
+
+    function ctd(tr, data, text){
+        let td = document.createElement("td")
+        if (text == "change_txt"){
             td.style.width = '20%'
-            td.innerText = '点击查看'
-            let show = 0
-            td.onclick = (function (){
-                if(show == 0){
-                    this.innerText = data[text];
-                    show = 1;
-                }else {
-                    this.innerText = '点击查看';
-                    show = 0;
+            if(data[text] == ''){
+                td.innerText = '无'
+            }else {
+                td.innerText = '点击查看'
+                let show = 0
+                td.onclick = function (){
+                    if(show == 0){
+                        this.innerText = data[text];
+                        show = 1;
+                    }else {
+                        this.innerText = '点击查看';
+                        show = 0;
+                    }
                 }
-            })
+            }
+        }else {
+            td.innerText = data[text];
         }
-    }else {
-       td.innerText = data[text];
+
+        tr.appendChild(td);
     }
-    tr.appendChild(td);
-}
 </script>
 </body>
 </html>
