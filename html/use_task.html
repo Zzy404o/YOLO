@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>已领取任务</title>
+    <link rel="stylesheet" href="./static/plugins/bootstrap-5.3.8/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/common.css">
+</head>
+<body>
+<div id="nav"></div>
+
+<div class="interval">
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                任务列表
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th scope="col">任务</th>
+                        <th scope="col">任务状态</th>
+                        <th scope="col">审核意见</th>
+                        <th scope="col">审核员</th>
+                        <th scope="col">审核时间</th>
+                    </tr>
+                    </thead>
+                    <tbody id="datalist">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="./static/plugins/bootstrap-5.3.8/js/bootstrap.bundle.js"></script>
+<script src="./static/js/common.js"></script>
+<script>
+window.onUserInfoReady = function (){
+    let xml = new XMLHttpRequest();
+    xml.open('get',"http://localhost:8000/myapp/user/task/");
+    xml.withCredentials = true;
+    xml.send()
+    xml.onreadystatechange = function (){
+        if (xml.readyState != 4) return;
+        if (xml.status == 200){
+            let datas = JSON.parse(xml.responseText);
+            let datalist = document.getElementById("datalist")
+            for (let i in datas){
+                let tr = document.createElement("tr")
+                datalist.appendChild(tr);
+                let data = datas[i]
+                ctd(tr,data,"change_task");
+                ctd(tr,data,"change_status");
+                ctd(tr,data,"change_txt");
+                ctd(tr,data,"change_person");
+                ctd(tr,data,"change_time");
+
+            }
+
+        }
+
+    }
+}
+
+function ctd(tr, data, text){
+    let td = document.createElement("td")
+    if(text == "change_txt"){
+        if(data[text] == ""){
+            td.innerText = '无'
+        }else {
+            td.style.width = '20%'
+            td.innerText = '点击查看'
+            let show = 0
+            td.onclick = (function (){
+                if(show == 0){
+                    this.innerText = data[text];
+                    show = 1;
+                }else {
+                    this.innerText = '点击查看';
+                    show = 0;
+                }
+            })
+        }
+    }else {
+       td.innerText = data[text];
+    }
+    tr.appendChild(td);
+}
+</script>
+</body>
+</html>
