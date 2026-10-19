@@ -18,4 +18,6 @@ urlpatterns = [
     path('commit/set/<int:pk>/',views.CommitDetail.as_view()),
 
     path('user/task/',views.TaskList.as_view()),
+
+    path('log/out/',views.logout),
 ]

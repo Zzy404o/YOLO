@@ -17,6 +17,8 @@ from django.db.models import F
 from django.utils import timezone
 from datetime import timedelta
 
+from rest_framework.decorators import api_view
+
 class CsrfExemptSessionAuthentication(SessionAuthentication):
     def enforce_csrf(self, request):
         return
@@ -200,3 +202,8 @@ class TaskList(APIView):
         for item, r in zip(data, queryset):
             item["is_pending"] = (latest[r.change_task_id] == 1)
         return Response(data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def logout(request):
+    request.session.clear()
+    return Response({'msg':"已退出"},status=status.HTTP_200_OK)
