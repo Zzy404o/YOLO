@@ -180,8 +180,11 @@
         }
     }
 
+    let isLoading = false;
     let yes = document.getElementById('getTask');
     yes.onclick = function () {
+        if(isLoading) return
+        isLoading = true;
         let form = new XMLHttpRequest();
         form.open('PATCH', 'http://localhost:8000/myapp/task/set/' + taskId + '/');
         form.withCredentials = true;
@@ -192,6 +195,7 @@
         form.send(JSON.stringify(sendData));
         form.onreadystatechange = function () {
             if (form.readyState != 4) return;
+            isLoading = false;
             if (form.status == 200) {
                 window.location.reload();
             } else {
@@ -202,6 +206,8 @@
 
     let sure = document.getElementById('backTask');
     sure.onclick = function () {
+        if(isLoading) return
+        isLoading = true;
         let form = new XMLHttpRequest();
         form.open('PATCH', 'http://localhost:8000/myapp/task/set/' + taskId + '/');
         form.withCredentials = true;
@@ -212,6 +218,7 @@
         form.send(JSON.stringify(sendData));
         form.onreadystatechange = function () {
             if (form.readyState != 4) return;
+            isLoading = false;
             if (form.status == 200) {
                 window.location.reload();
             } else {
@@ -222,6 +229,8 @@
 
     let ddl = document.getElementById('btnSubmit');
     ddl.onclick = function () {
+        if(isLoading) return
+        isLoading = true;
         let add = document.getElementById('formAdd');
         let fd = new FormData(add);
         fd.append("task", taskId);
@@ -233,6 +242,7 @@
         let error = document.getElementsByClassName("c5")[0];
         form.onreadystatechange = function () {
             if (form.readyState != 4) return;
+            isLoading = false;
             if (form.status == 201) {
                 let res = JSON.parse(form.responseText);
                 console.log(res)
