@@ -20,9 +20,10 @@ ENV/
 *.sqlite3
 db.sqlite3-journal
 local_settings.py
-myYolo/myYolo/settings.py
 /staticfiles/
-/media/task_zip/*
+
+# ===== 后端（仅 master 分支维护，web 不入库） =====
+myYolo/
 
 # ===== 前端静态文件 =====
 # /html/static/  # 已取消排除，static 需要提交
