@@ -24,8 +24,8 @@ myYolo/myYolo/settings.py
 /staticfiles/
 myYolo/media/
 
-# ===== 前端静态文件 =====
-# /html/static/  # 已取消排除，static 需要提交
+# ===== 前端（仅 web 分支维护，master 不入库） =====
+html/
 
 # ===== 环境变量 / 密钥 =====
 .env
