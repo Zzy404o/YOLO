@@ -13,6 +13,12 @@
         <div class="card">
             <div class="card-header">
                 任务列表
+                <label style="float:right; font-weight:normal; margin-right:15px;">
+                    <input type="checkbox" id="canGet"> 只看可领取
+                </label>
+                <label style="float:right; font-weight:normal; margin-right:15px;">
+                    <input type="checkbox" id="getOnly"> 只看已领取
+                </label>
             </div>
             <div class="card-body">
                 <table class="table">
@@ -125,8 +131,26 @@
                 let res = xml.responseText;
                 let datas = JSON.parse(res).results
                 let datalist = document.getElementById("datalist");
-                for (let i in datas) {
-                    let info = datas[i];
+                datalist.innerHTML = '';
+                let canGet = document.getElementById("canGet").checked;
+                let getOnly = document.getElementById("getOnly").checked;
+
+                let canGet_task = datas.filter(d => d.status === 1)
+                let getOnly_task = datas.filter(d => d.status === 2 && d.person === username)
+                let row = null
+
+                if (canGet && !getOnly) {
+                    row = canGet_task
+                } else if (getOnly && !canGet) {
+                    row = getOnly_task
+                } else if (getOnly && canGet) {
+                    row = canGet_task.concat(getOnly_task)
+                } else {
+                    row = datas
+                }
+
+                for (let i in row) {
+                    let info = row[i];
 
                     let tr = document.createElement("tr");
                     datalist.appendChild(tr);
@@ -151,9 +175,9 @@
                         td.innerHTML = '<p style="color:green;">已被领取</p>'
                     } else if (status == 3) {
                         td.innerHTML = '<p style="color: #6c757d">已提交</p>'
-                    } else if (status == 4){
+                    } else if (status == 4) {
                         td.innerHTML = '<p style="color: #6c757d">已完成</p>'
-                    }else {
+                    } else {
                         let get = td.querySelector(".get");
                         get.onclick = function () {
                             taskId = info.id
@@ -180,10 +204,13 @@
         }
     }
 
+    document.getElementById("canGet").onchange = window.onUserInfoReady;
+    document.getElementById("getOnly").onchange = window.onUserInfoReady;
+
     let isLoading = false;
     let yes = document.getElementById('getTask');
     yes.onclick = function () {
-        if(isLoading) return
+        if (isLoading) return
         isLoading = true;
         let form = new XMLHttpRequest();
         form.open('PATCH', 'http://localhost:8000/myapp/task/set/' + taskId + '/');
@@ -206,7 +233,7 @@
 
     let sure = document.getElementById('backTask');
     sure.onclick = function () {
-        if(isLoading) return
+        if (isLoading) return
         isLoading = true;
         let form = new XMLHttpRequest();
         form.open('PATCH', 'http://localhost:8000/myapp/task/set/' + taskId + '/');
@@ -229,7 +256,7 @@
 
     let ddl = document.getElementById('btnSubmit');
     ddl.onclick = function () {
-        if(isLoading) return
+        if (isLoading) return
         isLoading = true;
         let add = document.getElementById('formAdd');
         let fd = new FormData(add);
