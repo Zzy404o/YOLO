@@ -58,7 +58,13 @@ class TaskViewSet(viewsets.ModelViewSet):
                             continue
                         else:
                             return Response({"msg":"该任务24小时不得领取"},status=status.HTTP_400_BAD_REQUEST)
-                instance.person = self.request.user
+                # 检查和写入在同一条 SQL 里，多个用户同时领取只有一个能成功
+                updated = Task.objects.filter(pk=instance.pk, status=1).update(status=2, person=self.request.user)
+                if updated == 0:
+                    return Response({"msg": "任务已被领取，无法重复领取"}, status=status.HTTP_400_BAD_REQUEST)
+                instance.refresh_from_db()
+                serializer = self.get_serializer(instance)
+                return Response(serializer.data)
         elif target_status == 3:
             if instance.status == 1:
                 return Response({"msg":"任务提交需要先领取"},status=status.HTTP_400_BAD_REQUEST)

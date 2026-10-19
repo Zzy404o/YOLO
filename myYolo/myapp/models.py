@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.conf import settings
 import zipfile
 from django.utils import timezone
@@ -71,16 +71,17 @@ class Commit(models.Model):
         ordering = ('-commit_time','check_status')
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        # 审核结果联动任务状态
-        if self.check_status == 2:
-            Task.objects.filter(id=self.task_id).update(status=2, person=self.commit_person)
-            UserTask.objects.create(change_task=self.task, change_status=1, change_txt=self.check_txt,
-                                    commit_user=self.commit_person, change_person=self.check_person)
-        elif self.check_status == 3:
-            Task.objects.filter(id=self.task_id).update(status=4)
-            UserTask.objects.create(change_task=self.task, change_status=2, change_txt=self.check_txt,
-                                    commit_user=self.commit_person, change_person=self.check_person)
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+            # 审核结果联动任务状态    只有审核中的任务允许被联动改状态
+            if self.check_status == 2:
+                Task.objects.filter(id=self.task_id, status=3).update(status=2, person=self.commit_person)
+                UserTask.objects.create(change_task=self.task, change_status=1, change_txt=self.check_txt,
+                                        commit_user=self.commit_person, change_person=self.check_person)
+            elif self.check_status == 3:
+                Task.objects.filter(id=self.task_id, status=3).update(status=4)
+                UserTask.objects.create(change_task=self.task, change_status=2, change_txt=self.check_txt,
+                                        commit_user=self.commit_person, change_person=self.check_person)
 
     def __str__(self):
         return self.task.title
