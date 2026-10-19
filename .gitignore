@@ -22,7 +22,7 @@ db.sqlite3-journal
 local_settings.py
 myYolo/myYolo/settings.py
 /staticfiles/
-/media/task_zip/*
+myYolo/media/
 
 # ===== 前端静态文件 =====
 # /html/static/  # 已取消排除，static 需要提交
