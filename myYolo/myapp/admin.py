@@ -5,13 +5,13 @@ from django.utils import timezone
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
     # 显示的字段
-    list_display = ('title','num', 'create_time', 'creator','status','person')
+    list_display = ('title','num', 'create_time', 'creator','status','person','work_hours','deadline')
     # 可以搜索的字段
     search_fields = ('title', 'detail','creator__username')
     # 过滤的字段
     list_filter = ('creator', 'create_time','status','person')
     # 创建时填写的字段
-    fields = ('title', 'detail', 'task_file', 'creator')
+    fields = ('title', 'detail', 'task_file', 'creator','work_hours')
     readonly_fields = ('num','status','person')
 
 @admin.register(Commit)

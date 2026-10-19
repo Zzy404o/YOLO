@@ -19,6 +19,8 @@ class Task(models.Model):
     )
     status = models.SmallIntegerField(verbose_name='状态',choices=status_choice,default=1)
     person = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,verbose_name="标注人",blank=True,null=True,related_name='assigned_tasks')
+    work_hours = models.PositiveIntegerField(verbose_name="工期/小时",default=48)
+    deadline = models.DateTimeField(null=True,blank=True,verbose_name="截止时间")
 
     class Meta:
         verbose_name = '任务'
@@ -75,7 +77,7 @@ class Commit(models.Model):
             super().save(*args, **kwargs)
             # 审核结果联动任务状态    只有审核中的任务允许被联动改状态
             if self.check_status == 2:
-                Task.objects.filter(id=self.task_id, status=3).update(status=2, person=self.commit_person)
+                Task.objects.filter(id=self.task_id, status=3).update(status=2, person=self.commit_person,deadline=None)
                 UserTask.objects.create(change_task=self.task, change_status=1, change_txt=self.check_txt,
                                         commit_user=self.commit_person, change_person=self.check_person)
             elif self.check_status == 3:
@@ -106,10 +108,11 @@ class UserTask(models.Model):
     change_task = models.ForeignKey(to=Task,on_delete=models.PROTECT,verbose_name="任务")
     status_choice = (
         (1,"不合格"),
-        (2,"已通过")
+        (2,"已通过"),
+        (3,"超期回收")
     )
     change_status = models.SmallIntegerField(choices=status_choice,verbose_name="任务状态")
     change_txt = models.TextField(verbose_name="审核意见",null=True,blank=True)
     commit_user = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT,verbose_name="用户名",related_name="commit_user")
-    change_person = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT,verbose_name="审核人",related_name="change_person")
+    change_person = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT,null=True,blank=True,verbose_name="审核人",related_name="change_person")
     change_time = models.DateTimeField(auto_now_add=True,verbose_name="审核时间")

@@ -59,7 +59,9 @@ class UserTaskSerializer(serializers.ModelSerializer):
         return obj.get_change_status_display()
     change_person = serializers.SerializerMethodField()
     def get_change_person(self,obj):
-        return obj.change_person.username
+        if obj.change_person:
+            return obj.change_person.username
+        return '无'
     class Meta:
         model = UserTask
         fields = '__all__'
